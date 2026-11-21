@@ -62,19 +62,12 @@
   button:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--accent2); }
   #micBtn { width: 100%; font-size: 20px; padding: 14px; }
   #micBtn.on { background: #3a9a55; box-shadow: 0 4px 0 #2a7340; }
-  input[type=text] {
-    flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 10px 14px;
-    border: 2px solid #0002; border-radius: 999px; background: #fff;
-  }
   .meter { height: 10px; border-radius: 99px; background: #0001; overflow: hidden; }
   .meter > div { height: 100%; width: 0; background: linear-gradient(90deg, #7bd36b, #f2c94c, #e8743b); transition: width .06s; }
   .status { font-size: 14px; text-align: center; min-height: 1.4em; }
   label { font-size: 14px; white-space: nowrap; }
   input[type=range] { flex: 1; }
   .stats { display: flex; justify-content: space-between; font-size: 14px; }
-  .words { display: flex; flex-wrap: wrap; gap: 6px; max-height: 96px; overflow: auto; }
-  .words span { background: #fff; border: 1px solid #0001; border-radius: 99px; padding: 2px 10px; font-size: 13px; }
-  details summary { cursor: pointer; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -144,11 +137,6 @@
   <div class="meter"><div id="meter"></div></div>
   <div class="status" id="status">マイクを使うとき、ブラウザが許可を聞いてくるよ</div>
 
-  <form class="row" id="textForm">
-    <input type="text" id="textIn" placeholder="文字で話しかけることもできるよ" maxlength="80">
-    <button type="submit">言う</button>
-  </form>
-
   <div class="row">
     <label for="pitch">声の高さ</label>
     <input type="range" id="pitch" min="1" max="2.4" step="0.05" value="1.6">
@@ -158,11 +146,6 @@
     <span>まねした回数: <b id="count">0</b></span>
     <span>リリーのレベル: <b id="level">1</b></span>
   </div>
-
-  <details>
-    <summary>リリーがおぼえたことば</summary>
-    <div class="words" id="words"></div>
-  </details>
 </div>
 
 <script>
@@ -170,15 +153,14 @@
   const $ = id => document.getElementById(id);
   const bubble = $('bubble'), bug = $('bug'), mouth = $('mouth');
   const micBtn = $('micBtn'), meter = $('meter'), statusEl = $('status');
-  const pitchEl = $('pitch'), countEl = $('count'), levelEl = $('level'), wordsEl = $('words');
+  const pitchEl = $('pitch'), countEl = $('count'), levelEl = $('level');
 
   let ctx = null, stream = null, proc = null, analyser = null;
   let micOn = false;
   // waiting: 声を待っている / recording: 録音中 / playing: まね中
   let state = 'off';
   let chunks = [], preroll = [], silence = 0, recLen = 0, noise = 0.01, cooldownUntil = 0;
-  let count = 0, needText = false;
-  const words = [];
+  let count = 0;
 
   // ---------- 表示 ----------
   function say(text, hint) {
@@ -193,16 +175,10 @@
   function setStatus(t) { statusEl.textContent = t; }
   function setMouth(open) { mouth.setAttribute('ry', (3 + open * 22).toFixed(1)); mouth.setAttribute('rx', (14 + open * 6).toFixed(1)); }
 
-  function addCount(word) {
+  function addCount() {
     count++;
     countEl.textContent = count;
     levelEl.textContent = 1 + Math.floor(count / 5);
-    if (word && !words.includes(word)) {
-      words.unshift(word);
-      const s = document.createElement('span');
-      s.textContent = word;
-      wordsEl.prepend(s);
-    }
   }
 
   // 目が音のほうを見る
@@ -211,41 +187,12 @@
     $('pupilR').setAttribute('cx', 233 + dx);
   }
 
-  // ---------- 音声認識（対応ブラウザのみ・吹き出しの文字用） ----------
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec = null;
-  function startRecognition() {
-    if (!SR || rec) return;
-    rec = new SR();
-    rec.lang = 'ja-JP';
-    rec.continuous = true;
-    rec.interimResults = false;
-    rec.onresult = e => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (!e.results[i].isFinal) continue;
-        const t = e.results[i][0].transcript.trim();
-        if (t && needText) { needText = false; say(t); addWord(t); }
-      }
-    };
-    rec.onend = () => { if (micOn) { try { rec.start(); } catch (_) {} } else rec = null; };
-    rec.onerror = () => {};
-    try { rec.start(); } catch (_) {}
-  }
-  function addWord(t) {
-    if (!words.includes(t)) {
-      words.unshift(t);
-      const s = document.createElement('span');
-      s.textContent = t;
-      wordsEl.prepend(s);
-    }
-  }
-
   // ---------- マイク ----------
   async function startMic() {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     } catch (err) {
-      setStatus('マイクが使えなかったよ。文字で話しかけてね');
+      setStatus('マイクが使えなかったよ。ブラウザのマイク許可を確認してね');
       return;
     }
     ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
@@ -263,7 +210,6 @@
     bug.classList.add('listen');
     setStatus('聞いてるよ。何か話しかけてね');
     say('なになに？', true);
-    startRecognition();
   }
 
   function stopMic() {
@@ -271,7 +217,6 @@
     state = 'off';
     if (proc) { proc.disconnect(); proc.onaudioprocess = null; proc = null; }
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    if (rec) { try { rec.stop(); } catch (_) {} }
     micBtn.textContent = '🎤 マイクをオン';
     micBtn.classList.remove('on');
     bug.classList.remove('listen');
@@ -297,7 +242,6 @@
       if (preroll.length > Math.ceil(0.35 / dur)) preroll.shift();
       if (rms > start) {
         state = 'recording';
-        needText = false;
         chunks = preroll.slice(); preroll = [];
         recLen = 0; silence = 0;
         setStatus('ふむふむ…');
@@ -347,9 +291,7 @@
 
   function playBack(buf) {
     state = 'playing';
-    needText = !!SR;
-    if (!SR) say('♪ ' + '〜'.repeat(Math.min(6, Math.ceil(buf.duration * 2))));
-    else say('…', true);
+    say('♪ リリ' + 'リ'.repeat(Math.min(6, Math.ceil(buf.duration * 2))) + '〜');
     setStatus('まねっこ中！');
     bug.classList.remove('listen');
 
@@ -375,7 +317,6 @@
       analyser = null;
       setMouth(0);
       addCount();
-      if (needText && bubble.textContent === '…') say('♪ リリリ〜');
       if (micOn) {
         state = 'waiting';
         cooldownUntil = ctx.currentTime + 0.4;
@@ -396,41 +337,6 @@
     meter.style.width = Math.min(100, Math.sqrt(s / a.length) * 400) + '%';
     requestAnimationFrame(animateMouth);
   }
-
-  // ---------- 文字で話しかける ----------
-  let talkTimer = null;
-  $('textForm').onsubmit = e => {
-    e.preventDefault();
-    const t = $('textIn').value.trim();
-    if (!t) return;
-    $('textIn').value = '';
-    speakText(t);
-  };
-
-  function speakText(t) {
-    if (!('speechSynthesis' in window)) { say(t); addCount(t); return; }
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(t);
-    u.lang = 'ja-JP';
-    u.pitch = Math.min(2, 0.6 + parseFloat(pitchEl.value) * 0.6);
-    u.rate = 1.1;
-    const ja = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith('ja'));
-    if (ja) u.voice = ja;
-    u.onstart = () => {
-      bug.classList.add('talk');
-      clearInterval(talkTimer);
-      talkTimer = setInterval(() => setMouth(Math.random() * 0.9 + 0.1), 90);
-    };
-    u.onend = u.onerror = () => {
-      clearInterval(talkTimer);
-      bug.classList.remove('talk');
-      setMouth(0);
-    };
-    say(t);
-    addCount(t);
-    speechSynthesis.speak(u);
-  }
-  if ('speechSynthesis' in window) speechSynthesis.getVoices();
 })();
 </script>
 </body>
