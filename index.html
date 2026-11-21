@@ -40,8 +40,33 @@
   #bug .antenna { transform-box: fill-box; transform-origin: bottom center; animation: sway 2.4s ease-in-out infinite; }
   #bug .antenna.r { animation-delay: -1.2s; }
   #bug .body { transform-box: fill-box; transform-origin: bottom center; }
-  #bug.talk .antenna { animation-duration: .35s; }
-  #bug.talk .body { animation: bob .22s ease-in-out infinite; }
+  #bug { transform-origin: 50% 95%; }
+  #bug .wings, #bug .head, #bug .legs { transform-box: fill-box; transform-origin: center; }
+  #bug .note { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  /* 話しているあいだの動き */
+  #bug.talk { animation: hop .5s ease-in-out infinite; }
+  #bug.talk .antenna { animation-duration: .3s; }
+  #bug.talk .body { animation: bob .25s ease-in-out infinite; }
+  #bug.talk .head { animation: nod .5s ease-in-out infinite; }
+  #bug.talk .wings { animation: buzz .07s linear infinite alternate; }
+  #bug.talk .legs { animation: tap .25s ease-in-out infinite alternate; }
+  #bug.talk .note { animation: float 1.2s ease-out infinite; }
+  #bug.talk .n2 { animation-delay: .4s; }
+  #bug.talk .n3 { animation-delay: .8s; }
+  @keyframes hop {
+    0%,100% { transform: translateY(0) rotate(0); }
+    25% { transform: translateY(-12px) rotate(-3deg); }
+    50% { transform: translateY(0) rotate(0); }
+    75% { transform: translateY(-12px) rotate(3deg); }
+  }
+  @keyframes nod { 0%,100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+  @keyframes buzz { from { transform: scale(1, 1) rotate(-1.5deg); } to { transform: scale(1.04, .97) rotate(1.5deg); } }
+  @keyframes tap { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+  @keyframes float {
+    0% { opacity: 0; transform: translateY(10px) scale(.6); }
+    25% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-50px) scale(1.1) rotate(15deg); }
+  }
   #bug.listen .ear { opacity: 1; }
   #bug .ear { opacity: 0; transition: opacity .2s; }
   #bug .eyelid { transform-box: fill-box; transform-origin: top center; transform: scaleY(0); animation: blink 4.5s infinite; }
@@ -82,7 +107,7 @@
     <!-- 地面の影 -->
     <ellipse cx="200" cy="310" rx="130" ry="14" fill="#0002"/>
     <!-- 後ろ脚 -->
-    <g stroke="#5a3a1c" stroke-width="10" stroke-linecap="round" fill="none">
+    <g class="legs" stroke="#5a3a1c" stroke-width="10" stroke-linecap="round" fill="none">
       <path d="M120 230 L60 170 L40 300"/>
       <path d="M280 230 L340 170 L360 300"/>
       <path d="M140 260 L100 300"/>
@@ -95,9 +120,12 @@
       <path class="antenna l" d="M170 95 Q140 40 90 10" stroke="#4a2f16" stroke-width="5" fill="none" stroke-linecap="round"/>
       <path class="antenna r" d="M230 95 Q260 40 310 10" stroke="#4a2f16" stroke-width="5" fill="none" stroke-linecap="round"/>
       <!-- 羽 -->
-      <ellipse cx="200" cy="215" rx="105" ry="80" fill="#7a4e22"/>
-      <path d="M200 140 L200 290" stroke="#5a3a1c" stroke-width="4"/>
-      <path d="M125 190 Q160 200 195 185 M128 225 Q165 235 195 222 M275 190 Q240 200 205 185 M272 225 Q235 235 205 222" stroke="#5a3a1c" stroke-width="3" fill="none"/>
+      <g class="wings">
+        <ellipse cx="200" cy="215" rx="105" ry="80" fill="#7a4e22"/>
+        <path d="M200 140 L200 290" stroke="#5a3a1c" stroke-width="4"/>
+        <path d="M125 190 Q160 200 195 185 M128 225 Q165 235 195 222 M275 190 Q240 200 205 185 M272 225 Q235 235 205 222" stroke="#5a3a1c" stroke-width="3" fill="none"/>
+      </g>
+      <g class="head">
       <!-- 頭 -->
       <circle cx="200" cy="135" r="68" fill="#9a6630"/>
       <circle cx="200" cy="135" r="68" fill="url(#shine)"/>
@@ -117,11 +145,18 @@
       <ellipse cx="250" cy="158" rx="12" ry="7" fill="#f39a8a" opacity=".7"/>
       <!-- 口 -->
       <ellipse id="mouth" cx="200" cy="168" rx="14" ry="3" fill="#5b1f14"/>
+      </g>
       <!-- 聞いてるマーク -->
       <g class="ear" fill="#fff" stroke="#3a9a55" stroke-width="4">
         <path d="M290 110 q14 12 0 26" fill="none"/>
         <path d="M302 100 q24 22 0 46" fill="none"/>
       </g>
+    </g>
+    <!-- 話すときに出る音符 -->
+    <g class="notes" fill="#e8743b" font-size="34" font-weight="bold">
+      <text class="note n1" x="300" y="120">♪</text>
+      <text class="note n2" x="80" y="150">♫</text>
+      <text class="note n3" x="320" y="190">♪</text>
     </g>
     <defs>
       <radialGradient id="shine" cx=".35" cy=".3" r=".7">
