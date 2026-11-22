@@ -107,7 +107,6 @@
   .status { font-size: 14px; text-align: center; min-height: 1.4em; }
   label { font-size: 14px; white-space: nowrap; }
   input[type=range] { flex: 1; }
-  .stats { display: flex; justify-content: space-between; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -131,11 +130,6 @@
   <div class="row">
     <label for="pitch">声の高さ</label>
     <input type="range" id="pitch" min="0.6" max="2.4" step="0.05" value="1.6">
-  </div>
-
-  <div class="stats">
-    <span>まねした回数: <b id="count">0</b></span>
-    <span><span id="lvName">リリー</span>のレベル: <b id="level">1</b></span>
   </div>
 </div>
 
@@ -313,7 +307,7 @@
   // ================= 画面 =================
   const bubble = $('bubble'), bug = $('bug');
   const micBtn = $('micBtn'), meter = $('meter'), statusEl = $('status');
-  const pitchEl = $('pitch'), countEl = $('count'), levelEl = $('level');
+  const pitchEl = $('pitch');
   let cur = BUGS[0];
   let mouth = null;
 
@@ -338,7 +332,6 @@
     bug.classList.toggle('listen', micOn && state !== 'playing');
     for (const btn of picker.children) btn.classList.toggle('sel', btn.dataset.id === cur.id);
     $('sub').textContent = `話しかけると、${cur.kind}の${cur.name}が同じことを言い返すよ`;
-    $('lvName').textContent = cur.name;
     pitchEl.value = cur.voice.rate;
     try { localStorage.setItem('manekko_bug', cur.id); } catch (_) {}
     if (byUser) {
@@ -370,13 +363,6 @@
   // 目が音のほうを見る
   function look(dx) {
     bug.querySelectorAll('.pupil').forEach(el => el.setAttribute('cx', +el.dataset.x + dx));
-  }
-
-  let count = 0;
-  function addCount() {
-    count++;
-    countEl.textContent = count;
-    levelEl.textContent = 1 + Math.floor(count / 5);
   }
 
   // ================= 音 =================
@@ -560,7 +546,6 @@
       bug.classList.remove('talk');
       analyser = null;
       setMouth(0);
-      addCount();
       if (micOn) {
         state = 'waiting';
         cooldownUntil = ctx.currentTime + 0.4;
